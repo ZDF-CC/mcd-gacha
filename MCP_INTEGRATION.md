@@ -212,21 +212,33 @@ Streamable HTTP 传输、JSON-RPC 握手与 sessionId 管理、
 
 | 能力 | 状态 |
 | --- | --- |
-| 抽签算法 / 忌口过滤 / 预算约束 / 单件重抽 | ✅ 已实现，41 项自动化测试覆盖 |
+| 抽签算法 / 忌口过滤 / 预算约束 / 单件重抽 | ✅ 已实现，46 项自动化测试覆盖 |
 | HTTP 服务与网页 UI | ✅ 已实现，端到端流程验证通过 |
 | MCP 客户端协议层 | ✅ 已实现（握手、sessionId、SSE 解析、退避重试） |
-| 麦当劳真实接口 | ⏳ **待真实 Token 联调校准** |
+| 麦当劳真实接口 | ✅ **已于 2026-10-10 用真实 Token 完成联调**（上海虹桥站门店实测） |
 
-需要在真实 Token 下核验校准的项：
+联调中确认并修正的关键事实：
 
-1. **各 Tool 的真实字段名与枚举值**，尤其是 `create-order` 的
-   「就餐方式」对应字段——代码中暂按 `orderType: 'selfService'` 写入，
-   需通过 `tools/list` 的 schema 确认后再调整。
-   **不要凭工具名猜参数。**
-2. **价格单位**：`mcdAdapter.js` 的 `toCents()` 做了量级判断
-   （整数且 ≥1000 视作「分」，否则视作「元」），需用真实返回确认。
-3. **营养表覆盖率**：麦当劳营养表按餐品名组织，实际覆盖率待确认，
-   界面已如实展示 `covered/total`，不做美化。
-4. **返回结构的字段命名**：适配器对多处字段做了多候选兜底
-   （如 `mealCode` / `productCode` / `code`），
-   拿到真实返回后应收敛到实际字段，去掉冗余分支。
+1. **`query-nearby-stores` 参数不是 `address`**。必填 `beType`（1=到店自提）与
+   `searchType`（2=按位置搜索），且 `city` 必须是纯城市名——传「上海虹桥站」会被
+   拒绝，传 `city=上海 + keyword=上海虹桥站` 则成功。适配器内置城市名拆分
+   （支持「市」字切分与常见城市前缀表，见 `splitCityKeyword`）。
+2. **`query-meals` 返回的商品只有 code**，没有名称与价格。名称和价格由
+   `calculate-price` 提供：批量传入全部商品 code，一次返回每个商品的
+   `productName` 与单价，**价格单位是「分」**（6250 = ¥62.50）。
+3. **`query-meals` / `query-store-coupons` / `calculate-price` / `create-order`**
+   共用同一组必填参数：`storeCode` + `orderType: 1`（到店）+ `beType: 1`
+   （到店自取，此场景不传 `beCode`，传了会报错）。
+4. **`list-nutrition-foods` 无参数，但返回自定义紧凑表格**（非 JSON）：
+   首行 `[行数]{列名列表}:`，其后逗号分隔。解析器见 `parseCompactTable`。
+5. **`now-time-info` 返回没有 `hour` 字段**，从 `formatted`（如
+   `2026-10-10 14:08:11`）中提取。
+6. **`create-order` 参数名已按 schema 校准**：`storeCode / orderType / beType /
+   items[{productCode, quantity}] / takeWayCode`（eat-in=堂食、take-in-store=外带）。
+   下单链路的参数已对齐，但**未执行真实下单验证**——这是唯一有副作用的调用，
+   保留到用户真实点单时验证。
+7. 顺带发现的服务端行为：门店查询失败时返回 `success: false` 与中文 message
+   （如「没有查询到该地址」），适配器已把该原文透传给用户并附正确写法提示。
+
+诊断工具：`node scripts/inspect-tools.mjs <toolName> [jsonArgs]` 可查看任意
+Tool 的官方 schema 并发起真实调用，联调过程即用它完成。
