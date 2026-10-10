@@ -43,10 +43,16 @@ export class GachaService {
     }
 
     // 三块数据互不依赖，并行拉取，把等待时间压到最短。
-    // 每块都单独兜底：营养表拿不到就降级为「不显示营养」，
-    // 而不是让整个扭蛋失败——这符合「不请求无关权限」也「不因附属功能拖垮主流程」。
+    // 营养表、券、时间拿不到都可以降级继续扭；唯独菜单不行——
+    // 没有菜单就没有候选商品，静默吞掉错误会让用户看到
+    // 「价格上限把所有商品都过滤掉了」这种误导性提示
+    //（真实案例：calculate-price 商品数超限 → 菜单空 → 提示全是错的）。
     const [meals, coupons, nutrition, clock] = await Promise.all([
-      this.#adapter.listMeals().catch(() => []),
+      this.#adapter.listMeals().catch((error) => {
+        throw Object.assign(new Error(`这家门店的菜单暂时拉不到：${error.message}`), {
+          code: error.code ?? 'MCD-2002',
+        });
+      }),
       this.#adapter.listStoreCoupons().catch(() => []),
       this.#adapter.listNutrition().catch(() => new Map()),
       this.#adapter.now().catch(() => null),

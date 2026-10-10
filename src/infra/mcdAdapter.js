@@ -22,6 +22,9 @@
 
 import { McdMcpError } from './mcdMcpClient.js';
 
+/** calculate-price 单次调用的商品数量上限。实测 80 个通过、100 个被拒，取 50 留余量。 */
+const PRICE_BATCH_SIZE = 50;
+
 /** 一次会话里缓存的门店上下文，避免反复查同一门店 */
 export class McdAdapter {
   #client;
@@ -112,19 +115,25 @@ export class McdAdapter {
     }
     if (!entries.length) return [];
 
-    // 第二步：批量算价拿名字与单价（分）
-    const { data: priceData } = await this.#client.callTool('calculate-price', {
-      ...baseArgs,
-      items: entries.map((e) => ({ productCode: e.code, quantity: 1 })),
-    });
-    if (priceData?.success === false) {
-      throw new McdMcpError('MCD-1003', priceData.message ?? '价格计算失败');
-    }
+    // 第二步：批量算价拿名字与单价（分）。
+    // 【联调发现】calculate-price 有单次商品数量上限：实测 80 个通过、
+    // 100 个报「商品超过数量限制」，大门店菜单可达 130+ 个商品，
+    // 所以按每批 50 个分批调用（这是探测出的安全值，留了余量）。
     const priceMap = new Map();
-    for (const p of priceData?.data?.productList ?? []) {
-      const code = String(p?.productCode ?? '');
-      const cents = Number(p?.originalSubtotal ?? p?.subtotal) || 0;
-      if (code && cents > 0) priceMap.set(code, { name: String(p.productName), cents });
+    for (let i = 0; i < entries.length; i += PRICE_BATCH_SIZE) {
+      const batch = entries.slice(i, i + PRICE_BATCH_SIZE);
+      const { data: priceData } = await this.#client.callTool('calculate-price', {
+        ...baseArgs,
+        items: batch.map((e) => ({ productCode: e.code, quantity: 1 })),
+      });
+      if (priceData?.success === false) {
+        throw new McdMcpError('MCD-1003', priceData.message ?? '价格计算失败');
+      }
+      for (const p of priceData?.data?.productList ?? []) {
+        const code = String(p?.productCode ?? '');
+        const cents = Number(p?.originalSubtotal ?? p?.subtotal) || 0;
+        if (code && cents > 0) priceMap.set(code, { name: String(p.productName), cents });
+      }
     }
 
     this.#cache.meals = entries

@@ -101,7 +101,7 @@ async function locateMe() {
 
     input.value = result.address;
     setAddressHint(
-      `${result.message}。补上更具体的地标（例如「${result.city}虹桥站」），找到的门店会更近。`,
+      `${result.message}。在后面补上具体地标（地铁站、商场、公园都行），找到的门店会更近。`,
       result.confidence === 'high' ? 'ok' : 'warn'
     );
     input.focus();
