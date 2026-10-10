@@ -216,17 +216,36 @@ export class McdAdapter {
    * 创建订单。仅由用户显式确认后触发。
    *
    * 【已按真实 schema 校准参数名】create-order 必填 storeCode/orderType/beType；
-   * items 为 [{productCode, quantity}]；takeWayCode 来自 calculate-price 返回的
-   * takeWayList（eat-in=堂食，take-in-store=外带），默认外带。
-   * 注意：本方法只拼参数并调用，下单前的所有确认逻辑在 GachaService 双重锁里。
-   * 真实下单链路还需要一次端到端验证，MCP_INTEGRATION.md 中有记录。
+   * items 为 [{productCode, quantity}]。注意：本方法只拼参数并调用，
+   * 下单前的所有确认逻辑在 GachaService 双重锁里。
+   *
+   * 【踩坑记录】takeWayCode 不能硬编码：官方文档写明「值从 calculate-price
+   * 返回的 takeWayList[].code 中选取」，不同门店返回的取餐方式集合不同
+   * （虹桥店是 eat-in/take-in-store，佛山店拒绝 take-in-store 并提示
+   * 「取餐方式code错误，请重新获取」）。所以这里先调一次 calculate-price，
+   * 把服务端当下真实可用的取餐方式拿回来，再用于下单。
    */
   async createOrder({ storeId, items, couponId, peopleCount }) {
+    const baseArgs = { storeCode: storeId, orderType: 1, beType: 1 };
+
+    // 先算价：拿到真实可用的取餐方式列表（同时获得官方总价，可用于展示）
+    const { data: priceData } = await this.#client.callTool('calculate-price', {
+      ...baseArgs,
+      items: items.map((i) => ({ productCode: i.code, quantity: i.qty ?? 1 })),
+    });
+    const takeWayList = priceData?.data?.takeWayList ?? [];
+    const takeWayCode = takeWayList[0]?.code;
+    if (!takeWayCode) {
+      throw new McdMcpError(
+        'MCD-3001',
+        '下单失败：这家门店当前没有可用的取餐方式（可能是已打烊）。没有产生订单。'
+      );
+    }
+    const takeWay = String(takeWayList[0]?.title ?? takeWayCode);
+
     const payload = {
-      storeCode: storeId,
-      orderType: 1, // 到店
-      beType: 1, // 到店自取
-      takeWayCode: 'take-in-store',
+      ...baseArgs,
+      takeWayCode,
       items: items.map((i) => ({ productCode: i.code, quantity: i.qty ?? 1 })),
     };
     if (couponId) payload.couponId = couponId;
@@ -234,8 +253,6 @@ export class McdAdapter {
     const result = await this.#client.callTool('create-order', payload);
 
     // 下单是唯一有副作用的调用，业务失败必须明确报错，绝不能当成功返回。
-    // 其余接口都校验了 success 字段，这里更不能漏——否则用户会以为下单成功
-    // （看到「未取到支付链接」），实际订单根本没创建。
     const data = result.data ?? {};
     if (data.success === false) {
       throw new McdMcpError(
@@ -243,7 +260,11 @@ export class McdAdapter {
         `下单失败：${data.message ?? '服务端未说明原因'}。没有产生订单，可以调整后重试。`
       );
     }
-    return normalizeCreatedOrder(result);
+    const created = normalizeCreatedOrder(result);
+    created.takeWay = takeWay;
+    // calculate-price 的官方总价（带券前），比本地算的更可信
+    created.officialTotalCents = Number(priceData?.data?.price) || null;
+    return created;
   }
 
   // ---------- 时间 ----------

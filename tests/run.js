@@ -870,10 +870,12 @@ test('定位：离所有城市都很远时明确告知不可靠，而不是装�
 
 // ---------- 下单：唯一有副作用的调用，失败必须响亮地失败 ----------
 
-/** 造一个只返回预设结果的假 MCP 客户端 */
-function fakeMcpClient(response) {
+/** 按工具名返回预设响应的假 MCP 客户端 */
+function fakeMcpClient(responsesByTool) {
   return {
-    async callTool() {
+    async callTool(name) {
+      const response = responsesByTool[name];
+      if (!response) throw new Error(`测试里没配置 ${name} 的响应`);
       return response;
     },
     async listTools() {
@@ -882,10 +884,29 @@ function fakeMcpClient(response) {
   };
 }
 
+/** createOrder 下单前必算的算价响应（带可用取餐方式） */
+function fakePriceResponse() {
+  return {
+    data: {
+      success: true,
+      data: {
+        price: 3790,
+        takeWayList: [
+          { code: 'take-in-store', title: '外带' },
+          { code: 'eat-in', title: '堂食' },
+        ],
+      },
+    },
+  };
+}
+
 test('createOrder：服务端返回 success:false 时必须抛错，不能假装下单成功', async () => {
   const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
   const adapter = new McdAdapter(
-    fakeMcpClient({ data: { success: false, message: '门店已打烊', data: null } })
+    fakeMcpClient({
+      'calculate-price': fakePriceResponse(),
+      'create-order': { data: { success: false, message: '门店已打烊', data: null } },
+    })
   );
 
   await assert.rejects(
@@ -899,10 +920,32 @@ test('createOrder：服务端返回 success:false 时必须抛错，不能假装
   );
 });
 
+test('createOrder：门店没有可用取餐方式时必须抛错', async () => {
+  const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
+  const adapter = new McdAdapter(
+    fakeMcpClient({
+      'calculate-price': { data: { success: true, data: { price: 100, takeWayList: [] } } },
+      // create-order 不该被调用——没有取餐方式时根本不该走到下单
+    })
+  );
+
+  await assert.rejects(
+    () => adapter.createOrder({ storeId: 'S1', items: [{ code: 'M1', qty: 1 }] }),
+    (err) => {
+      assert.equal(err.code, 'MCD-3001');
+      assert.ok(err.message.includes('取餐方式'), '要说明是取餐方式不可用');
+      return true;
+    }
+  );
+});
+
 test('createOrder：返回里没有订单号时必须抛错，不能当作成功', async () => {
   const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
   const adapter = new McdAdapter(
-    fakeMcpClient({ data: { success: true, data: { orderDetail: {} } } })
+    fakeMcpClient({
+      'calculate-price': fakePriceResponse(),
+      'create-order': { data: { success: true, data: { orderDetail: {} } } },
+    })
   );
 
   await assert.rejects(
@@ -915,21 +958,24 @@ test('createOrder：返回里没有订单号时必须抛错，不能当作成功
   );
 });
 
-test('createOrder：成功时解析官方结构，且绝不伪造支付链接', async () => {
+test('createOrder：成功时解析官方结构，绝不伪造支付链接，取餐方式动态取自算价返回', async () => {
   const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
   const adapter = new McdAdapter(
     fakeMcpClient({
-      data: {
-        success: true,
+      'calculate-price': fakePriceResponse(),
+      'create-order': {
         data: {
-          orderDetail: {
-            orderId: 'O999',
-            orderStatus: '待支付',
-            payId: 'P999',
-            expirePayTime: '2026-10-10 15:30:00',
-            pickupCode: '8842',
-            realTotalAmount: '37.90',
-            storeName: '麦当劳测试餐厅',
+          success: true,
+          data: {
+            orderDetail: {
+              orderId: 'O999',
+              orderStatus: '待支付',
+              payId: 'P999',
+              expirePayTime: '2026-10-10 15:30:00',
+              pickupCode: '8842',
+              realTotalAmount: '37.90',
+              storeName: '麦当劳测试餐厅',
+            },
           },
         },
       },
@@ -946,6 +992,10 @@ test('createOrder：成功时解析官方结构，且绝不伪造支付链接', 
   assert.equal(r.storeName, '麦当劳测试餐厅');
   // 官方不提供支付链接，就绝不能凭空编一个出来
   assert.equal(r.payUrl, null);
+  // 取餐方式必须从 calculate-price 返回里动态取，不允许硬编码
+  assert.equal(r.takeWay, '外带');
+  // 官方总价（带券前）一并返回，比本地算的更可信
+  assert.equal(r.officialTotalCents, 3790);
 });
 
 test('定位：城市坐标表本身是自洽的', () => {

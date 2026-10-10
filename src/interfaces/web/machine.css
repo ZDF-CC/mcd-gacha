@@ -1,5 +1,119 @@
 /* ============================================================
-   扭蛋机主体
+   机身：整个「设定条件」面板就是扭蛋机的机身
+   ============================================================ */
+
+#panel-config {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 22px 26px;
+  border-radius: 24px;
+
+  /* 实体机身：塑料质感 + 顶部高光，与下方玻璃罩连成一整台机器 */
+  background:
+    linear-gradient(180deg, #fff8f0 0%, #ffeede 42%, #ffdcc4 100%);
+  border: 3px solid #f0c9a8;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -16px 28px rgba(214, 122, 82, 0.14),
+    0 14px 30px rgba(180, 100, 60, 0.18);
+}
+
+/* 机身顶部高光条 */
+#panel-config::before {
+  content: '';
+  position: absolute;
+  inset: 3px 3px auto 3px;
+  height: 30px;
+  border-radius: 20px 20px 44px 44px / 20px 20px 16px 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+/* 铭牌式标题：黄底铆钉牌 */
+#panel-config .panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 16px;
+  padding: 5px 18px 5px 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #7a4a00;
+  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow));
+  border: 2px solid #e8a317;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 2px 0 #d99b15;
+}
+
+/* 铭牌上的红色铆钉圆点 */
+#panel-config .panel-title .step {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--machine-red);
+  font-size: 13px;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* 机身内的表单标签与说明文字：用机身上的深棕，保持可读 */
+#panel-config .field > label {
+  color: #8a5a20;
+}
+
+#panel-config .hint {
+  color: #a97b46;
+}
+
+/* 输入框做成机身凹槽：浅色开口 + 内阴影 */
+#panel-config input[type="text"],
+#panel-config input[type="number"] {
+  border: 2px solid #f0c9a8;
+  border-radius: 10px;
+  background: #fffdf8;
+  box-shadow: inset 0 2px 6px rgba(180, 100, 60, 0.14);
+}
+
+#panel-config input:focus {
+  border-color: var(--machine-red);
+  box-shadow:
+    inset 0 2px 6px rgba(180, 100, 60, 0.14),
+    0 0 0 3px rgba(218, 41, 28, 0.12);
+}
+
+/* 机身上的选项按钮：塑料按钮质感，按下时陷进去 */
+#panel-config .chip {
+  border: 2px solid #f0c9a8;
+  background: #fffdf8;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 2px 0 rgba(214, 122, 82, 0.25);
+  transition: border-color .15s, transform .1s, box-shadow .15s;
+}
+
+#panel-config .chip:hover {
+  border-color: var(--machine-red);
+}
+
+#panel-config .chip.on {
+  background: linear-gradient(180deg, #ff8a80, var(--machine-red) 60%, #b71c14);
+  border-color: #b71c14;
+  color: #fff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+#panel-config .chip.on:active {
+  transform: translateY(1px);
+}
+
+/* ============================================================
+   玻璃罩区：扭蛋球 + 投币口 + 拉杆
+   （原 .machine 外壳已上移到 #panel-config，这里是机身内嵌区域）
    ============================================================ */
 
 .machine {
@@ -10,29 +124,27 @@
   grid-template-columns: auto 1fr auto;
   align-items: end;
   gap: 16px;
-  padding: 34px 26px 22px;
-  margin: 8px 0 4px;
-  border-radius: 20px;
+  padding: 30px 26px 20px;
+  margin: 16px 0 4px;
+  border-radius: 16px;
 
-  /* 实体机身：塑料质感 + 顶部高光 */
+  /* 内嵌玻璃罩：比外层机身略暗，形成「嵌进去」的立体感 */
   background:
-    linear-gradient(180deg, #fff8f0 0%, #ffeede 42%, #ffdcc4 100%),
-    #fff;
-  border: 3px solid #f0c9a8;
+    linear-gradient(180deg, rgba(218, 41, 28, 0.05) 0%, rgba(255, 199, 44, 0.07) 100%);
+  border: 2px solid #f0c9a8;
   box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -14px 24px rgba(214, 122, 82, 0.14),
-    0 10px 24px rgba(180, 100, 60, 0.16);
+    inset 0 4px 16px rgba(180, 100, 60, 0.16),
+    inset 0 -2px 8px rgba(255, 255, 255, 0.5);
 }
 
-/* 机身顶部高光条 */
+/* 玻璃罩顶部反光 */
 .machine::before {
   content: '';
   position: absolute;
-  inset: 3px 3px auto 3px;
-  height: 26px;
-  border-radius: 16px 16px 40px 40px / 16px 16px 14px 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  inset: 2px 2px auto 2px;
+  height: 22px;
+  border-radius: 12px 12px 30px 30px / 12px 12px 10px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
   pointer-events: none;
 }
 
