@@ -18,73 +18,92 @@
     <p class="hero-sub">设定预算、忌口和必吃项，扭出一份搭配。不满意可以单件重扭。</p>
   </header>
 
-  <!-- 步骤 1：设定条件 -->
-  <section class="panel" id="panel-config">
-    <h2 class="panel-title"><span class="step">1</span>设定条件</h2>
+  <!-- 步骤 1：扭蛋机（设定条件在机身正面） -->
+  <section class="machine-shell" id="panel-config">
+    <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">
+      <span id="sound-icon">🔇</span><span id="sound-text">音效关</span>
+    </button>
 
-    <div class="field">
-      <label for="address">地点 <span class="req">必填</span></label>
-      <div class="address-row">
-        <input id="address" type="text" placeholder="例如：上海虹桥站 / 深圳南山科技园" autocomplete="off" />
-        <button type="button" id="btn-locate" class="locate-btn" aria-label="用我的当前位置">
-          <span class="locate-icon" aria-hidden="true"></span><span class="locate-text">定位</span>
+    <!-- 玻璃罩：里面装着彩色扭蛋球 -->
+    <div class="dome">
+      <div class="dome-glass" id="machine">
+        <span class="ball b1"></span>
+        <span class="ball b2"></span>
+        <span class="ball b3"></span>
+        <span class="ball b4"></span>
+        <span class="ball b5"></span>
+        <span class="ball b6"></span>
+      </div>
+      <div class="dome-rim"></div>
+    </div>
+
+    <!-- 红色机身 -->
+    <div class="machine-body">
+      <div class="plate">麦麦扭蛋机<span class="plate-sub">GACHA</span></div>
+
+      <div class="control-panel">
+        <div class="field">
+          <label for="address">地点 <span class="req">必填</span></label>
+          <div class="address-row">
+            <input id="address" type="text" placeholder="例如：上海虹桥站 / 深圳南山科技园" autocomplete="off" />
+            <button type="button" id="btn-locate" class="locate-btn" aria-label="用我的当前位置">
+              <span class="locate-icon" aria-hidden="true"></span><span class="locate-text">定位</span>
+            </button>
+          </div>
+          <p class="hint" id="address-hint">用来查附近门店的在售菜单，支持地标、商场、地铁站名称</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="budget">总预算（元）</label>
+            <input id="budget" type="number" value="40" min="5" max="500" step="1" />
+          </div>
+          <div class="field">
+            <label for="itemMax">单品上限（元）</label>
+            <input id="itemMax" type="number" value="30" min="3" max="300" step="1" />
+          </div>
+          <div class="field">
+            <label for="people">人数</label>
+            <input id="people" type="number" value="1" min="1" max="20" step="1" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>饮食目标</label>
+          <div class="chip-group" id="diet-group"></div>
+        </div>
+
+        <div class="field">
+          <label>忌口 <span class="hint-inline">点中的会被完全排除</span></label>
+          <div class="chip-group" id="avoid-group"></div>
+        </div>
+
+        <div class="field">
+          <label for="must">必吃项 <span class="hint-inline">逗号分隔，最多 2 个最稳</span></label>
+          <input id="must" type="text" placeholder="例如：巨无霸, 薯条" autocomplete="off" />
+        </div>
+      </div>
+
+      <!-- 投币旋钮 -->
+      <div class="knob-area">
+        <button class="knob" id="lever" type="button" aria-label="转动旋钮扭蛋">
+          <span class="knob-cross" aria-hidden="true"></span>
         </button>
+        <div class="knob-info">
+          <div class="slot" aria-hidden="true"></div>
+          <div class="machine-status" id="machine-status">投币开始</div>
+          <div class="machine-tip" id="machine-tip">转动旋钮或按回车开始扭</div>
+        </div>
       </div>
-      <p class="hint" id="address-hint">用来查附近门店的在售菜单，支持地标、商场、地铁站名称</p>
-    </div>
 
-    <div class="field-row">
-      <div class="field">
-        <label for="budget">总预算（元）</label>
-        <input id="budget" type="number" value="40" min="5" max="500" step="1" />
-      </div>
-      <div class="field">
-        <label for="itemMax">单品上限（元）</label>
-        <input id="itemMax" type="number" value="30" min="3" max="300" step="1" />
-      </div>
-      <div class="field">
-        <label for="people">人数</label>
-        <input id="people" type="number" value="1" min="1" max="20" step="1" />
+      <!-- 出蛋口 -->
+      <div class="outlet" aria-hidden="true">
+        <div class="outlet-hole"><span class="outlet-capsule"></span></div>
       </div>
     </div>
 
-    <div class="field">
-      <label>饮食目标</label>
-      <div class="chip-group" id="diet-group"></div>
-    </div>
-
-    <div class="field">
-      <label>忌口 <span class="hint-inline">点中的会被完全排除</span></label>
-      <div class="chip-group" id="avoid-group"></div>
-    </div>
-
-    <div class="field">
-      <label for="must">必吃项 <span class="hint-inline">逗号分隔，最多 2 个最稳</span></label>
-      <input id="must" type="text" placeholder="例如：巨无霸, 薯条" autocomplete="off" />
-    </div>
-
-    <!-- 扭蛋机主体 -->
-    <div class="machine" id="machine">
-      <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">
-        <span id="sound-icon">🔇</span><span id="sound-text">音效关</span>
-      </button>
-
-      <div class="ball-stage">
-        <div class="ball"><div class="ball-capsule"></div></div>
-      </div>
-
-      <div class="machine-mid">
-        <div class="slot"></div>
-        <div class="machine-status" id="machine-status">投币开始</div>
-        <div class="machine-tip" id="machine-tip">点拉杆或按回车开始扭</div>
-      </div>
-
-      <button class="lever" id="lever" type="button" aria-label="拉动拉杆扭蛋">
-        <span class="lever-base"></span>
-        <span class="lever-stick"></span>
-        <span class="lever-knob"></span>
-      </button>
-    </div>
+    <!-- 底座 -->
+    <div class="machine-base" aria-hidden="true"></div>
 
     <p class="error" id="config-error" hidden></p>
   </section>

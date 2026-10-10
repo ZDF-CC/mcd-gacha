@@ -1,349 +1,455 @@
 /* ============================================================
-   机身：整个「设定条件」面板就是扭蛋机的机身
-   ============================================================ */
-
-#panel-config {
-  position: relative;
-  overflow: hidden;
-  padding: 22px 22px 26px;
-  border-radius: 24px;
-
-  /* 实体机身：塑料质感 + 顶部高光，与下方玻璃罩连成一整台机器 */
-  background:
-    linear-gradient(180deg, #fff8f0 0%, #ffeede 42%, #ffdcc4 100%);
-  border: 3px solid #f0c9a8;
-  box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -16px 28px rgba(214, 122, 82, 0.14),
-    0 14px 30px rgba(180, 100, 60, 0.18);
-}
-
-/* 机身顶部高光条 */
-#panel-config::before {
-  content: '';
-  position: absolute;
-  inset: 3px 3px auto 3px;
-  height: 30px;
-  border-radius: 20px 20px 44px 44px / 20px 20px 16px 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
-  pointer-events: none;
-}
-
-/* 铭牌式标题：黄底铆钉牌 */
-#panel-config .panel-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px 0 16px;
-  padding: 5px 18px 5px 6px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #7a4a00;
-  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow));
-  border: 2px solid #e8a317;
-  border-radius: 999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 2px 0 #d99b15;
-}
-
-/* 铭牌上的红色铆钉圆点 */
-#panel-config .panel-title .step {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: #fff;
-  background: var(--machine-red);
-  font-size: 13px;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25);
-}
-
-/* 机身内的表单标签与说明文字：用机身上的深棕，保持可读 */
-#panel-config .field > label {
-  color: #8a5a20;
-}
-
-#panel-config .hint {
-  color: #a97b46;
-}
-
-/* 输入框做成机身凹槽：浅色开口 + 内阴影 */
-#panel-config input[type="text"],
-#panel-config input[type="number"] {
-  border: 2px solid #f0c9a8;
-  border-radius: 10px;
-  background: #fffdf8;
-  box-shadow: inset 0 2px 6px rgba(180, 100, 60, 0.14);
-}
-
-#panel-config input:focus {
-  border-color: var(--machine-red);
-  box-shadow:
-    inset 0 2px 6px rgba(180, 100, 60, 0.14),
-    0 0 0 3px rgba(218, 41, 28, 0.12);
-}
-
-/* 机身上的选项按钮：塑料按钮质感，按下时陷进去 */
-#panel-config .chip {
-  border: 2px solid #f0c9a8;
-  background: #fffdf8;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 2px 0 rgba(214, 122, 82, 0.25);
-  transition: border-color .15s, transform .1s, box-shadow .15s;
-}
-
-#panel-config .chip:hover {
-  border-color: var(--machine-red);
-}
-
-#panel-config .chip.on {
-  background: linear-gradient(180deg, #ff8a80, var(--machine-red) 60%, #b71c14);
-  border-color: #b71c14;
-  color: #fff;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-#panel-config .chip.on:active {
-  transform: translateY(1px);
-}
-
-/* ============================================================
-   玻璃罩区：扭蛋球 + 投币口 + 拉杆
-   （原 .machine 外壳已上移到 #panel-config，这里是机身内嵌区域）
-   ============================================================ */
-
-.machine {
-  --glass: rgba(255, 255, 255, 0.55);
-
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: end;
-  gap: 16px;
-  padding: 30px 26px 20px;
-  margin: 16px 0 4px;
-  border-radius: 16px;
-
-  /* 内嵌玻璃罩：比外层机身略暗，形成「嵌进去」的立体感 */
-  background:
-    linear-gradient(180deg, rgba(218, 41, 28, 0.05) 0%, rgba(255, 199, 44, 0.07) 100%);
-  border: 2px solid #f0c9a8;
-  box-shadow:
-    inset 0 4px 16px rgba(180, 100, 60, 0.16),
-    inset 0 -2px 8px rgba(255, 255, 255, 0.5);
-}
-
-/* 玻璃罩顶部反光 */
-.machine::before {
-  content: '';
-  position: absolute;
-  inset: 2px 2px auto 2px;
-  height: 22px;
-  border-radius: 12px 12px 30px 30px / 12px 12px 10px 10px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
-  pointer-events: none;
-}
-
-/* ---- 左侧：扭蛋球 ---- */
-
-.ball-stage {
-  position: relative;
-  width: 92px;
-  height: 92px;
-  flex: 0 0 92px;
-}
-
-.ball {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  /* 半透明塑料球，里面能看到胶囊 */
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.15) 42%, transparent 60%),
-    radial-gradient(circle at 68% 74%, rgba(218, 41, 28, 0.28), rgba(255, 199, 44, 0.2) 60%, transparent);
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    inset -6px -10px 18px rgba(180, 90, 60, 0.25),
-    0 6px 14px rgba(160, 90, 60, 0.25);
-  display: grid;
-  place-items: center;
-  transition: transform .12s;
-}
-
-/* 球内的胶囊 */
-.ball-capsule {
-  width: 46px;
-  height: 26px;
-  border-radius: 13px;
-  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow) 55%, #e8a317);
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 2px 5px rgba(150, 100, 20, 0.3);
-}
-
-/* 扭动时球在滚 */
-.machine.spinning .ball {
-  animation: ballRoll .55s linear infinite;
-}
-
-@keyframes ballRoll {
-  0% { transform: translateX(0) rotate(0deg); }
-  50% { transform: translateX(14px) rotate(180deg); }
-  100% { transform: translateX(0) rotate(360deg); }
-}
-
-/* ---- 中间：投币口 + 状态 ---- */
-
-.machine-mid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 6px;
-  min-width: 0;
-}
-
-.slot {
-  width: 100%;
-  max-width: 200px;
-  height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #4a3529, #2d1f18);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55);
-  position: relative;
-}
-
-/* 投币口的金属高光 */
-.slot::after {
-  content: '';
-  position: absolute;
-  inset: 3px 8px auto 8px;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.machine-status {
-  font-size: 13px;
-  color: #8a5a3b;
-  font-weight: 600;
-  text-align: center;
-  min-height: 18px;
-}
-
-.machine-tip {
-  font-size: 12px;
-  color: #a8785a;
-  text-align: center;
-}
-
-/* ---- 右侧：拉杆 ---- */
-
-.lever {
-  width: 62px;
-  height: 92px;
-  flex: 0 0 62px;
-  position: relative;
-  cursor: pointer;
-  border: none;
-  background: none;
-  padding: 0;
-  /* 触控/鼠标/键盘都能操作 */
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.lever:focus-visible {
-  outline: 3px solid var(--machine-red);
-  outline-offset: 4px;
-  border-radius: 12px;
-}
-
-/* 拉杆底座 */
-.lever-base {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 46px;
-  height: 26px;
-  border-radius: 8px 8px 6px 6px;
-  background: linear-gradient(180deg, #4a3529, #2d1f18);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
-/* 拉杆杆身 */
-.lever-stick {
-  position: absolute;
-  bottom: 22px;
-  left: 50%;
-  width: 12px;
-  height: 54px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #9aa5ad, #d6dde2 40%, #8d979e);
-  transform-origin: bottom center;
-  transform: translateX(-50%) rotate(18deg);
-  transition: transform .16s cubic-bezier(.34, 1.56, .64, 1);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-}
-
-/* 拉杆球头 */
-.lever-knob {
-  position: absolute;
-  bottom: 68px;
-  left: 50%;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  transform: translateX(-50%) rotate(18deg);
-  transform-origin: bottom center;
-  background:
-    radial-gradient(circle at 34% 30%, #ff8a80, var(--machine-red) 55%, #a8160f);
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 9px rgba(160, 30, 20, 0.4);
-  transition: transform .16s cubic-bezier(.34, 1.56, .64, 1), bottom .16s;
-}
-
-/* 悬停提示抬起 */
-.lever:hover .lever-stick,
-.lever:focus-visible .lever-stick {
-  transform: translateX(-50%) rotate(24deg);
-}
-
-.lever:hover .lever-knob,
-.lever:focus-visible .lever-knob {
-  transform: translateX(-50%) rotate(24deg);
-}
-
-/* 拉下动作 */
-.lever.pulled .lever-stick,
-.lever.pulled .lever-knob {
-  transform: translateX(-50%) rotate(-30deg);
-}
-
-.lever.pulled .lever-knob {
-  bottom: 40px;
-}
-
-/* 扭动中禁用 */
-.lever:disabled {
-  cursor: not-allowed;
-  opacity: .55;
-}
-
-/* ============================================================
-   胶囊揭晓卡
+   乐高式扭蛋机
+   结构：玻璃罩（彩色球）→ 红色方柱机身（铭牌 + 设定面板 + 旋钮）
+        → 出蛋口 → 底座
+   参考：经典投币扭蛋机实物造型
    ============================================================ */
 
 /* 配色变量提到 :root，避免只在 .machine 作用域内可用——
-   揭晓卡在 .machine 之外，拿不到这里的变量会渲染成白字透明底。 */
+   揭晓卡在机器之外，拿不到这里的变量会渲染成白字透明底。 */
 :root {
   --machine-red: #da291c;
+  --machine-red-dark: #b71c14;
+  --machine-red-deep: #8e1610;
   --machine-yellow: #ffc72c;
+  --knob-gray: #b0b7bd;
 }
+
+/* 外壳：不是卡片，整台机器本身就摆在这里 */
+.machine-shell {
+  position: relative;
+  padding: 6px 0 30px;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   玻璃罩：半透明罩子 + 彩色扭蛋球
+   ============================================================ */
+
+.dome {
+  position: relative;
+  width: 78%;
+  margin: 0 auto;
+}
+
+.dome-glass {
+  position: relative;
+  height: 150px;
+  border-radius: 14px 14px 4px 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.12));
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    inset 0 0 22px rgba(255, 255, 255, 0.25),
+    inset -8px 0 16px rgba(160, 40, 30, 0.06);
+  overflow: hidden;
+}
+
+/* 玻璃左侧的反光柱 */
+.dome-glass::before {
+  content: '';
+  position: absolute;
+  left: 9%;
+  top: 6%;
+  bottom: 6%;
+  width: 10%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 玻璃罩底部的灰色卡环 */
+.dome-rim {
+  height: 10px;
+  margin: 0 -5px;
+  background: linear-gradient(180deg, #e2e5e8, #9aa1a7);
+  border: 1px solid #8a9198;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ---- 扭蛋球：半透明塑料球，能看到里面的颜色 ---- */
+
+.ball {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.25) 40%, transparent 60%),
+    radial-gradient(circle at 50% 52%, var(--c) 0%, var(--c) 55%, rgba(255, 255, 255, 0.4) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    inset -4px -6px 10px rgba(0, 0, 0, 0.15),
+    0 3px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.12s;
+}
+
+/* 六颗球错落堆叠：下排三颗、上排三颗 */
+.ball.b1 { --c: #ffc72c; left: 8%;  bottom: 6px; }
+.ball.b2 { --c: #2196f3; left: 36%; bottom: 10px; }
+.ball.b3 { --c: #4caf50; left: 64%; bottom: 4px; }
+.ball.b4 { --c: #ff5252; left: 20%; bottom: 48px; }
+.ball.b5 { --c: #ff9800; left: 50%; bottom: 52px; }
+.ball.b6 { --c: #eceff1; left: 76%; bottom: 46px; }
+
+/* 扭动时球在罩子里翻滚 */
+.dome-glass.spinning .ball {
+  animation: ballShake 0.38s linear infinite;
+}
+
+@keyframes ballShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-4px, -5px) rotate(-10deg); }
+  75% { transform: translate(4px, -4px) rotate(10deg); }
+}
+
+/* ============================================================
+   红色方柱机身
+   ============================================================ */
+
+.machine-body {
+  position: relative;
+  width: 88%;
+  margin: 0 auto;
+  padding: 16px 14px 12px;
+  border-radius: 10px 10px 6px 6px;
+  background:
+    /* 积木横缝 */
+    repeating-linear-gradient(180deg, transparent 0 26px, rgba(0, 0, 0, 0.07) 26px 28px),
+    linear-gradient(180deg, #e53935 0%, var(--machine-red) 45%, #c62828 100%);
+  border: 2px solid var(--machine-red-deep);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.18),
+    0 14px 26px rgba(160, 30, 20, 0.3);
+}
+
+/* 黄色铭牌 */
+.plate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 auto 12px;
+  padding: 6px 18px;
+  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow));
+  border: 2px solid #d99b15;
+  border-radius: 6px;
+  color: #7a4a00;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.plate-sub {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #a8751a;
+}
+
+/* ============================================================
+   机身正面的设定面板（深色凹槽）
+   ============================================================ */
+
+.control-panel {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  padding: 12px 12px 2px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.control-panel .field {
+  margin-bottom: 12px;
+}
+
+.control-panel .field > label {
+  color: #ffd75e;
+  font-size: 12px;
+}
+
+.control-panel .hint,
+.control-panel .hint-inline {
+  color: #ffb3ab;
+}
+
+.control-panel input[type='text'],
+.control-panel input[type='number'] {
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  background: #fffdf8;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+.control-panel input:focus {
+  border-color: var(--machine-yellow);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.12),
+    0 0 0 3px rgba(255, 199, 44, 0.25);
+}
+
+/* 机身上的选项按钮：黄色按钮，选中时陷下去 */
+.control-panel .chip {
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: #fffdf8;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 2px 0 rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  padding: 5px 12px;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.control-panel .chip:hover {
+  border-color: var(--machine-yellow);
+}
+
+.control-panel .chip.on {
+  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow) 60%, #e8a317);
+  border-color: #d99b15;
+  color: #7a4a00;
+  font-weight: 700;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.control-panel .chip.on:active {
+  transform: translateY(1px);
+}
+
+/* 定位按钮在红色机身上：白色凸起 */
+.control-panel .locate-btn {
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: #fffdf8;
+}
+
+.control-panel .locate-btn:hover:not([disabled]) {
+  border-color: var(--machine-yellow);
+  background: #fff8e0;
+}
+
+.control-panel .hint.locate-ok { color: #b9f6ca; }
+.control-panel .hint.locate-warn { color: #ffd75e; }
+.control-panel .hint.locate-err { color: #ff8a80; }
+
+/* ============================================================
+   投币旋钮区
+   ============================================================ */
+
+.knob-area {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* 灰色十字旋钮 */
+.knob {
+  position: relative;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e3e7eb, var(--knob-gray) 55%, #8a939a);
+  border: 3px solid #6e767d;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1), box-shadow 0.15s;
+}
+
+.knob:hover:not(:disabled) {
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.knob:focus-visible {
+  outline: 3px solid var(--machine-yellow);
+  outline-offset: 2px;
+}
+
+.knob:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 十字凸块 */
+.knob-cross::before,
+.knob-cross::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(180deg, #d3d9de, #9aa3ab);
+  border: 2px solid #6e767d;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.knob-cross::before {
+  left: 50%;
+  top: 12px;
+  bottom: 12px;
+  width: 16px;
+  transform: translateX(-50%);
+}
+
+.knob-cross::after {
+  top: 50%;
+  left: 12px;
+  right: 12px;
+  height: 16px;
+  transform: translateY(-50%);
+}
+
+/* 转动状态：旋转 90 度 */
+.knob.pulled {
+  transform: rotate(90deg);
+}
+
+.knob-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 投币槽 */
+.slot {
+  width: 46px;
+  height: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: #212121;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.machine-status {
+  color: #ffd75e;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.machine-tip {
+  color: #ffb3ab;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   出蛋口：黑色洞口里露出半截胶囊
+   ============================================================ */
+
+.outlet {
+  display: grid;
+  place-items: center;
+  margin-top: 12px;
+}
+
+.outlet-hole {
+  position: relative;
+  width: 92px;
+  height: 60px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(ellipse at 50% 42%, #000 0%, #212121 62%, #3a3a3a 100%);
+  border: 3px solid var(--machine-red-deep);
+  box-shadow:
+    inset 0 8px 14px rgba(0, 0, 0, 0.8),
+    0 2px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.outlet-capsule {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 52px;
+  height: 34px;
+  transform: translateX(-50%);
+  border-radius: 26px 26px 20px 20px;
+  background: linear-gradient(180deg, #ffd75e, var(--machine-yellow) 55%, #e8a317);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* 扭动时洞里的胶囊也在晃 */
+.dome-glass.spinning ~ .machine-body .outlet-capsule,
+.machine-shell:has(.dome-glass.spinning) .outlet-capsule {
+  animation: capsuleWobble 0.38s linear infinite;
+}
+
+@keyframes capsuleWobble {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-56%) rotate(-6deg); }
+  75% { transform: translateX(-44%) rotate(6deg); }
+}
+
+/* ============================================================
+   底座
+   ============================================================ */
+
+.machine-base {
+  width: 100%;
+  height: 16px;
+  margin: 0 auto;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(0, 0, 0, 0.1) 22px 24px),
+    linear-gradient(180deg, #c62828, var(--machine-red-deep));
+  border-radius: 0 0 10px 10px;
+  border: 2px solid #7a0c05;
+  border-top: none;
+  box-shadow: 0 10px 18px rgba(160, 30, 20, 0.35);
+}
+
+/* ============================================================
+   音效开关：机身右上角的小白按钮
+   ============================================================ */
+
+.sound-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.sound-toggle:hover {
+  background: #fff;
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--machine-red);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   胶囊揭晓卡（揭晓面板用，不在机身上）
+   ============================================================ */
 
 .capsule-result {
   position: relative;
@@ -353,11 +459,11 @@
   background: linear-gradient(180deg, #fffdf8, #fff6e8);
   border: 3px solid var(--machine-yellow);
   box-shadow: 0 6px 18px rgba(220, 170, 60, 0.24);
-  animation: capsuleDrop .42s cubic-bezier(.3, 1.5, .5, 1);
+  animation: capsuleDrop 0.42s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
 @keyframes capsuleDrop {
-  0% { opacity: 0; transform: translateY(-26px) scale(.9); }
+  0% { opacity: 0; transform: translateY(-26px) scale(0.9); }
   100% { opacity: 1; transform: none; }
 }
 
@@ -369,7 +475,7 @@
   height: 10px;
   border-radius: 8px 8px 0 0;
   background: linear-gradient(90deg, var(--machine-red) 0 24%, var(--machine-yellow) 24% 48%, #ff6b35 48% 72%, #4caf50 72%);
-  opacity: .85;
+  opacity: 0.85;
 }
 
 .capsule-label {
@@ -386,96 +492,77 @@
 }
 
 /* ============================================================
-   音效开关
-   ============================================================ */
-
-/* 音效开关放在机身左上角，避开右侧的拉杆 */
-.sound-toggle {
-  position: absolute;
-  top: 10px;
-  left: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid #f0c9a8;
-  background: rgba(255, 255, 255, 0.9);
-  font-size: 11px;
-  color: #8a5a3b;
-  cursor: pointer;
-  font-family: inherit;
-  z-index: 2;
-}
-
-.sound-toggle:hover { background: #fff; }
-
-/* ============================================================
-   响应式
+   移动端：机器整体缩小，旋钮区上下排列
    ============================================================ */
 
 @media (max-width: 520px) {
-  .machine {
-    /* 手机上改为两行：上排球 + 状态，下排横杆 */
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      'ball mid'
-      'lever lever';
-    align-items: center;
-    gap: 10px;
-    padding: 32px 18px 18px;
+  .machine-shell {
+    max-width: 300px;
   }
 
-  .ball-stage { grid-area: ball; width: 66px; height: 66px; flex-basis: 66px; }
-  .machine-mid { grid-area: mid; align-items: flex-start; }
-  .slot { max-width: none; }
-  .sound-toggle { top: 8px; left: 10px; padding: 3px 8px; }
-
-  /* 横杆：底座在左，球头在右，模拟从右往左拉 */
-  .lever { grid-area: lever; width: 100%; height: 58px; }
-  .lever-base {
-    left: 14px;
-    right: 14px;
-    bottom: 8px;
-    width: auto;
-    transform: none;
-  }
-  .lever-stick {
-    left: auto;
-    right: 44px;
-    bottom: 14px;
-    height: 40px;
-    transform-origin: bottom center;
-    transform: rotate(0deg);
-  }
-  .lever-knob {
-    left: auto;
-    right: 12px;
-    bottom: 16px;
-    transform-origin: bottom center;
-    transform: rotate(0deg);
+  .dome-glass {
+    height: 118px;
   }
 
-  /* 横杆的「拉下」表现为球头往左推（用 transform，动画才不会跳） */
-  .lever:hover .lever-stick,
-  .lever:focus-visible .lever-stick,
-  .lever.pulled .lever-stick { transform: rotate(0deg); }
-  .lever:hover .lever-knob,
-  .lever:focus-visible .lever-knob { transform: rotate(0deg); }
-  .lever.pulled .lever-knob {
-    transform: translateX(-46px) rotate(0deg);
+  .ball {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ball.b4 { bottom: 40px; }
+  .ball.b5 { bottom: 44px; }
+  .ball.b6 { bottom: 38px; }
+
+  .machine-body {
+    width: 92%;
+    padding: 12px 10px 10px;
+  }
+
+  .plate {
+    font-size: 15px;
+    padding: 5px 14px;
+  }
+
+  .knob {
+    width: 60px;
+    height: 60px;
+  }
+
+  .knob-cross::before {
+    top: 9px;
+    bottom: 9px;
+    width: 13px;
+  }
+
+  .knob-cross::after {
+    left: 9px;
+    right: 9px;
+    height: 13px;
+  }
+
+  .outlet-hole {
+    width: 78px;
+    height: 52px;
+  }
+
+  .outlet-capsule {
+    width: 44px;
+    height: 28px;
   }
 }
 
-/* 尊重系统的「减少动态效果」 */
+/* ============================================================
+   减少动态效果：尊重系统设置
+   ============================================================ */
+
 @media (prefers-reduced-motion: reduce) {
-  .machine.spinning .ball,
-  .lever.pulled .lever-stick,
-  .lever.pulled .lever-knob,
-  .capsule-result,
-  .item.fresh,
-  .btn-primary .egg {
-    animation: none !important;
-    transition: none !important;
+  .dome-glass.spinning .ball,
+  .outlet-capsule,
+  .capsule-result {
+    animation: none;
+  }
+
+  .knob {
+    transition: none;
   }
 }
