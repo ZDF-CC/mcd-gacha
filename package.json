@@ -1,0 +1,28 @@
+{
+  "name": "mcd-gacha",
+  "version": "1.0.0",
+  "description": "麦麦扭蛋机：设定预算、忌口、必吃项，基于麦当劳 MCP 真实在售数据随机搭配套餐，揭晓后可逐项调整并确认下单",
+  "type": "module",
+  "bin": {
+    "mcd-gacha": "src/interfaces/cli.js"
+  },
+  "scripts": {
+    "start": "node src/interfaces/httpServer.js",
+    "cli": "node src/interfaces/cli.js",
+    "test": "node tests/run.js",
+    "doctor": "node src/interfaces/cli.js doctor"
+  },
+  "keywords": [
+    "mcd",
+    "mcp",
+    "workbuddy",
+    "skill",
+    "agent",
+    "food"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {}
+}

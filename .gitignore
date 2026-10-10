@@ -1,0 +1,37 @@
+# ===== 凭证：绝对不能提交 =====
+# 程序会依次查找这些位置（见 src/infra/env.js 的 envFileCandidates），
+# 所以每一个都必须排除，改动 env.js 的候选文件名时也要同步改这里。
+.env
+.env.*
+!.env.example
+*.token
+*_token.txt
+*-token.txt
+mcp-token.txt
+token.txt
+.env.local
+.env.txt
+
+# ===== 结果文件：本地运行产物 =====
+r.json
+result.json
+*.result.json
+
+# ===== 系统与编辑器 =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ===== Node（本项目零依赖，保留以防将来引入）=====
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# ===== 明确排除任何可能含凭证的文件 =====
+*.pem
+*.key
+secrets*.json

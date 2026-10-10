@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>麦麦扭蛋机 · 随机搭配助手</title>
+<!-- 内联 SVG favicon：零请求，也省掉控制台的 404 噪音 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ffc72c' stroke='%23da291c' stroke-width='2'/%3E%3Crect x='10' y='13' width='12' height='6' rx='3' fill='%23da291c'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/static/style.css" />
+<link rel="stylesheet" href="/static/machine.css" />
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="hero-badge">基于麦当劳 MCP 真实在售数据</div>
+    <h1 class="hero-title">麦麦扭蛋机</h1>
+    <p class="hero-sub">设定预算、忌口和必吃项，扭出一份搭配。不满意可以单件重扭。</p>
+  </header>
+
+  <!-- 步骤 1：设定条件 -->
+  <section class="panel" id="panel-config">
+    <h2 class="panel-title"><span class="step">1</span>设定条件</h2>
+
+    <div class="field">
+      <label for="address">地点 <span class="req">必填</span></label>
+      <input id="address" type="text" placeholder="例如：上海虹桥站 / 深圳南山科技园" autocomplete="off" />
+      <p class="hint">用来查附近门店的在售菜单，支持地标、商场、地铁站名称</p>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="budget">总预算（元）</label>
+        <input id="budget" type="number" value="40" min="5" max="500" step="1" />
+      </div>
+      <div class="field">
+        <label for="itemMax">单品上限（元）</label>
+        <input id="itemMax" type="number" value="30" min="3" max="300" step="1" />
+      </div>
+      <div class="field">
+        <label for="people">人数</label>
+        <input id="people" type="number" value="1" min="1" max="20" step="1" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>饮食目标</label>
+      <div class="chip-group" id="diet-group"></div>
+    </div>
+
+    <div class="field">
+      <label>忌口 <span class="hint-inline">点中的会被完全排除</span></label>
+      <div class="chip-group" id="avoid-group"></div>
+    </div>
+
+    <div class="field">
+      <label for="must">必吃项 <span class="hint-inline">逗号分隔，最多 2 个最稳</span></label>
+      <input id="must" type="text" placeholder="例如：巨无霸, 薯条" autocomplete="off" />
+    </div>
+
+    <!-- 扭蛋机主体 -->
+    <div class="machine" id="machine">
+      <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">
+        <span id="sound-icon">🔇</span><span id="sound-text">音效关</span>
+      </button>
+
+      <div class="ball-stage">
+        <div class="ball"><div class="ball-capsule"></div></div>
+      </div>
+
+      <div class="machine-mid">
+        <div class="slot"></div>
+        <div class="machine-status" id="machine-status">投币开始</div>
+        <div class="machine-tip" id="machine-tip">点拉杆或按回车开始扭</div>
+      </div>
+
+      <button class="lever" id="lever" type="button" aria-label="拉动拉杆扭蛋">
+        <span class="lever-base"></span>
+        <span class="lever-stick"></span>
+        <span class="lever-knob"></span>
+      </button>
+    </div>
+
+    <p class="error" id="config-error" hidden></p>
+  </section>
+
+  <!-- 步骤 2：揭晓 -->
+  <section class="panel" id="panel-result" hidden>
+    <h2 class="panel-title"><span class="step">2</span>揭晓</h2>
+
+    <div class="store-line" id="store-line"></div>
+    <div class="stat-line" id="stat-line"></div>
+
+    <div class="capsule-result">
+      <div class="capsule-label" id="capsule-label">🎉 今天我抽到了</div>
+      <div class="items" id="items"></div>
+    </div>
+
+    <div class="nutri" id="nutri" hidden></div>
+    <div class="warnings" id="warnings" hidden></div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="btn-respin">全部重扭</button>
+      <button class="btn-primary" id="btn-confirm">确认这份搭配</button>
+    </div>
+  </section>
+
+  <!-- 步骤 3：确认 -->
+  <section class="panel" id="panel-confirm" hidden>
+    <h2 class="panel-title"><span class="step">3</span>确认</h2>
+    <pre class="summary" id="summary"></pre>
+    <details class="order-detail">
+      <summary>查看订单结构（JSON）</summary>
+      <pre id="order-json"></pre>
+    </details>
+    <div class="actions">
+      <button class="btn-secondary" id="btn-back">回去继续调整</button>
+      <button class="btn-primary" id="btn-order" disabled>确认下单</button>
+    </div>
+    <p class="hint">下单会生成一笔真实订单，请再次核对商品与金额。</p>
+    <div id="order-result" hidden>
+      <div class="store-line" id="order-info"></div>
+    </div>
+    <p class="error" id="order-error" hidden></p>
+  </section>
+
+  <footer class="footer">
+    <p>本项目为麦当劳程序员节创意开发大赛参赛作品，非麦当劳官方产品。餐品与价格以麦当劳官方渠道实时结果为准。</p>
+  </footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
