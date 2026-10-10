@@ -390,13 +390,22 @@ async function placeOrder() {
 
     $('order-error').hidden = true;
     $('order-result').hidden = false;
-    const pay = res.created?.payUrl;
-    $('order-info').innerHTML =
-      `✅ 订单已创建 · 订单号 <b>${escapeHtml(res.created?.orderId ?? '-')}</b>` +
-      ` · 状态 ${escapeHtml(res.created?.status ?? 'unknown')}` +
-      (pay
-        ? `<br /><a class="pay-link" href="${escapeHtml(pay)}" target="_blank" rel="noopener">打开支付链接</a>`
-        : '<br />未取到支付链接，请到麦当劳官方渠道查看该订单。');
+
+    // 麦当劳下单接口不返回支付链接，支付在官方渠道完成。
+    // 与其留一句「未取到支付链接」让人以为出错，不如把截止时间给全。
+    const created = res.created ?? {};
+    const lines = [
+      `✅ 订单已创建 · 订单号 <b>${escapeHtml(created.orderId ?? '-')}</b>`,
+      `状态 ${escapeHtml(created.status ?? 'unknown')}`,
+    ];
+    if (created.storeName) lines.push(`门店 ${escapeHtml(created.storeName)}`);
+    if (created.amount != null) lines.push(`实付 ${escapeHtml(String(created.amount))} 元`);
+    if (created.pickupCode) lines.push(`取餐码 ${escapeHtml(created.pickupCode)}`);
+    lines.push('请在麦当劳官方 App / 小程序的「我的订单」里完成支付');
+    if (created.expirePayTime) {
+      lines.push(`超时会自动取消，请在此前完成：${escapeHtml(created.expirePayTime)}`);
+    }
+    $('order-info').innerHTML = lines.join('<br />');
   } catch (error) {
     const el = $('order-error');
     el.textContent = `${error.message}\n（为避免重复下单，系统不会自动重试，请先到官方渠道核对是否已创建成功）`;

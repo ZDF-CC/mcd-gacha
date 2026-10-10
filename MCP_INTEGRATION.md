@@ -31,7 +31,7 @@
 | 4 | `list-nutrition-foods` | 查询常见餐品的营养成分（能量、蛋白质、脂肪、碳水、钠） | 构建菜单时并行调用，用于饮食目标优化与结果展示 |
 | 5 | `now-time-info` | 获取当前完整时间信息 | 与菜单数据并行调用，用于时段感知（早餐档 / 午餐档 / 夜宵档等） |
 | 6 | `auto-bind-coupons` | 一键领取所有当前可领的麦麦省优惠券 | **确认下单前**调用，先领券再算价 |
-| 7 | `create-order` | 创建订单，返回订单号与支付链接 | **仅在用户二次确认后**调用 |
+| 7 | `create-order` | 创建订单，返回订单号、支付截止时间与取餐码（**不返回支付链接**） | **仅在用户二次确认后**调用 |
 
 ### 明确的 Tool 边界
 
@@ -235,8 +235,15 @@ Streamable HTTP 传输、JSON-RPC 握手与 sessionId 管理、
    `2026-10-10 14:08:11`）中提取。
 6. **`create-order` 参数名已按 schema 校准**：`storeCode / orderType / beType /
    items[{productCode, quantity}] / takeWayCode`（eat-in=堂食、take-in-store=外带）。
-   下单链路的参数已对齐，但**未执行真实下单验证**——这是唯一有副作用的调用，
-   保留到用户真实点单时验证。
+7. **下单接口不返回支付链接**。官方 `outputSchema` 里 `data.data.orderDetail`
+   只有 `orderId / orderStatus / payId / expirePayTime / pickupCode /
+   realTotalAmount / storeName` 等字段，没有任何 `payUrl` 之类的链接——
+   麦当劳的支付要在官方 App / 小程序完成。因此项目如实置空 `payUrl`，
+   **绝不拼接任何看起来像支付地址的东西**，改为展示支付截止时间与取餐码。
+8. **下单是唯一校验了失败路径的接口**：`success === false` 或返回里没有订单号
+   时一律抛 `MCD-3001`。这是踩过坑补上的——早期版本漏了这层校验，
+   服务端拒绝下单时代码仍返回"成功"，用户会看到「未取到支付链接」这种
+   看似成功的提示，实际订单根本没创建。
 7. 顺带发现的服务端行为：门店查询失败时返回 `success: false` 与中文 message
    （如「没有查询到该地址」），适配器已把该原文透传给用户并附正确写法提示。
 

@@ -232,6 +232,17 @@ export class McdAdapter {
     if (couponId) payload.couponId = couponId;
     if (peopleCount > 1) payload.remark = `${peopleCount} 人份`;
     const result = await this.#client.callTool('create-order', payload);
+
+    // 下单是唯一有副作用的调用，业务失败必须明确报错，绝不能当成功返回。
+    // 其余接口都校验了 success 字段，这里更不能漏——否则用户会以为下单成功
+    // （看到「未取到支付链接」），实际订单根本没创建。
+    const data = result.data ?? {};
+    if (data.success === false) {
+      throw new McdMcpError(
+        'MCD-3001',
+        `下单失败：${data.message ?? '服务端未说明原因'}。没有产生订单，可以调整后重试。`
+      );
+    }
     return normalizeCreatedOrder(result);
   }
 
@@ -402,18 +413,39 @@ function normalizeNutrition(raw) {
 
 /**
  * 归一化 create-order 的返回。
- * 【待联调校准】支付链接字段名按常见命名做多候选兜底，
- * 拿到真实返回后应收敛到实际字段。
+ *
+ * 【已按官方 outputSchema 校准】真实结构在 data.data.orderDetail，字段包括
+ * orderId / orderStatus / status / payId / expirePayTime / pickupCode /
+ * realTotalAmount / storeName 等。
+ *
+ * 重要事实：**该接口不返回任何支付链接**——outputSchema 里没有 payUrl /
+ * paymentUrl 之类的字段，只有 payId。麦当劳的支付要在官方渠道完成，
+ * 所以这里如实置空，绝不自己拼一个「看起来像支付地址」的东西出来。
  */
 function normalizeCreatedOrder(result) {
   const data = result.data ?? {};
-  const payload = pick(data, ['order', 'orderInfo', 'data']) ?? data;
+  const detail = data?.data?.orderDetail ?? data?.orderDetail ?? data?.order ?? data;
+  const orderId = String(pick(detail, ['orderId', 'orderNo', 'id']) ?? '');
+
+  if (!orderId) {
+    // 拿不到订单号就无法确认订单是否真的创建了，这时候说「成功」是危险的
+    throw new McdMcpError(
+      'MCD-3001',
+      '下单返回里没有订单号，无法确认订单状态。请先到麦当劳官方渠道核对是否已有订单，再决定是否重试。'
+    );
+  }
+
   return {
-    orderId: String(pick(payload, ['orderId', 'orderNo', 'id']) ?? ''),
-    // 支付链接必须来自 MCP 真实返回，绝不自己拼接
-    payUrl: pick(payload, ['payUrl', 'paymentUrl', 'payLink', 'paymentLink', 'url']) ?? null,
-    status: String(pick(payload, ['status', 'orderStatus', 'state']) ?? 'unknown'),
-    raw: payload,
+    orderId,
+    payUrl: null, // 官方不提供支付链接，别编
+    payId: pick(detail, ['payId']) ?? null,
+    // 超时未支付订单会被取消，这个时间比支付链接更值得展示
+    expirePayTime: pick(detail, ['expirePayTime']) ?? null,
+    pickupCode: pick(detail, ['pickupCode']) ?? null,
+    status: String(pick(detail, ['orderStatus', 'status']) ?? 'unknown'),
+    amount: pick(detail, ['realTotalAmount', 'totalAmount']) ?? null,
+    storeName: pick(detail, ['storeName']) ?? null,
+    raw: detail,
   };
 }
 

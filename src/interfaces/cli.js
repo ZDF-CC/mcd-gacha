@@ -99,10 +99,16 @@ async function order() {
   console.log(res.summary);
   console.log(`\n订单号：${res.created.orderId}`);
   console.log(`状态：${res.created.status}`);
-  if (res.created.payUrl) {
-    console.log(`\n支付链接（请自行完成支付）：\n${res.created.payUrl}`);
-  } else {
-    console.log('\n未取到支付链接，请到麦当劳官方渠道查看该订单。');
+  if (res.created.storeName) console.log(`门店：${res.created.storeName}`);
+  if (res.created.amount != null) console.log(`实付：${res.created.amount} 元`);
+  if (res.created.pickupCode) console.log(`取餐码：${res.created.pickupCode}`);
+
+  // 麦当劳 MCP 的下单接口不返回支付链接（官方 outputSchema 里就没有），
+  // 支付在官方渠道完成。与其丢一句「未取到支付链接」让用户以为出错了，
+  // 不如把真正有用的信息给全：截止时间比什么都重要。
+  console.log('\n支付：请打开麦当劳官方 App / 小程序，在「我的订单」里完成支付。');
+  if (res.created.expirePayTime) {
+    console.log(`请在此时间前完成支付，超时订单会自动取消：${res.created.expirePayTime}`);
   }
 }
 

@@ -528,13 +528,23 @@ function orderMockAdapter(overrides = {}) {
         ...payload,
         items: payload.items.map((i) => ({ mealCode: i.code, count: i.qty ?? 1 })),
       };
-      return { orderId: 'O123', payUrl: 'https://pay.example/O123', status: 'CREATED' };
+      // 按官方 outputSchema 的真实结构返回：没有支付链接，只有 payId 等
+      return {
+        orderId: 'O123',
+        payUrl: null,
+        payId: 'P123',
+        expirePayTime: '2026-10-10 15:30:00',
+        pickupCode: '8842',
+        status: '待支付',
+        amount: '37.90',
+        storeName: '测试门店',
+      };
     },
     ...overrides,
   };
 }
 
-test('placeOrder：确认后创建订单并返回真实支付链接', async () => {
+test('placeOrder：确认后创建订单并返回官方提供的订单信息', async () => {
   const { GachaService } = await import('../src/app/gachaService.js');
   const adapter = orderMockAdapter();
   const svc = new GachaService(adapter);
@@ -545,8 +555,10 @@ test('placeOrder：确认后创建订单并返回真实支付链接', async () =
   const res = await svc.placeOrder({ address: '测试', current: spun, peopleCount: 1 });
   assert.ok(res.ok, res.error ?? res.reason);
   assert.equal(res.created.orderId, 'O123');
-  // 支付链接必须原样透传，绝不自己拼接
-  assert.equal(res.created.payUrl, 'https://pay.example/O123');
+  // 麦当劳下单接口不返回支付链接，官方结构里只有 payId，所以 payUrl 必须为空
+  assert.equal(res.created.payUrl, null, '不应该凭空造出支付链接');
+  assert.equal(res.created.expirePayTime, '2026-10-10 15:30:00');
+  assert.equal(res.created.pickupCode, '8842');
   // 下单前必须先领券
   assert.ok(adapter.calls.includes('bind'), '下单前应先领券');
   assert.ok(adapter.calls.indexOf('bind') < adapter.calls.indexOf('create'));
@@ -854,6 +866,86 @@ test('定位：离所有城市都很远时明确告知不可靠，而不是装�
   assert.equal(r.ok, true, '仍然返回一个结果，供用户参考');
   assert.equal(r.confidence, 'low');
   assert.ok(r.message.includes('建议手动填写'), '必须提示用户手动填写，不能假装很准');
+});
+
+// ---------- 下单：唯一有副作用的调用，失败必须响亮地失败 ----------
+
+/** 造一个只返回预设结果的假 MCP 客户端 */
+function fakeMcpClient(response) {
+  return {
+    async callTool() {
+      return response;
+    },
+    async listTools() {
+      return [];
+    },
+  };
+}
+
+test('createOrder：服务端返回 success:false 时必须抛错，不能假装下单成功', async () => {
+  const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
+  const adapter = new McdAdapter(
+    fakeMcpClient({ data: { success: false, message: '门店已打烊', data: null } })
+  );
+
+  await assert.rejects(
+    () => adapter.createOrder({ storeId: 'S1', items: [{ code: 'M1', qty: 1 }] }),
+    (err) => {
+      assert.equal(err.code, 'MCD-3001');
+      assert.ok(err.message.includes('门店已打烊'), '服务端的失败原因要原样带到用户面前');
+      assert.ok(err.message.includes('没有产生订单'), '要明确告诉用户没有产生订单');
+      return true;
+    }
+  );
+});
+
+test('createOrder：返回里没有订单号时必须抛错，不能当作成功', async () => {
+  const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
+  const adapter = new McdAdapter(
+    fakeMcpClient({ data: { success: true, data: { orderDetail: {} } } })
+  );
+
+  await assert.rejects(
+    () => adapter.createOrder({ storeId: 'S1', items: [{ code: 'M1', qty: 1 }] }),
+    (err) => {
+      assert.equal(err.code, 'MCD-3001');
+      assert.ok(err.message.includes('无法确认'), '要如实说明无法确认订单状态');
+      return true;
+    }
+  );
+});
+
+test('createOrder：成功时解析官方结构，且绝不伪造支付链接', async () => {
+  const { McdAdapter } = await import('../src/infra/mcdAdapter.js');
+  const adapter = new McdAdapter(
+    fakeMcpClient({
+      data: {
+        success: true,
+        data: {
+          orderDetail: {
+            orderId: 'O999',
+            orderStatus: '待支付',
+            payId: 'P999',
+            expirePayTime: '2026-10-10 15:30:00',
+            pickupCode: '8842',
+            realTotalAmount: '37.90',
+            storeName: '麦当劳测试餐厅',
+          },
+        },
+      },
+    })
+  );
+
+  const r = await adapter.createOrder({ storeId: 'S1', items: [{ code: 'M1', qty: 2 }] });
+  assert.equal(r.orderId, 'O999');
+  assert.equal(r.status, '待支付');
+  assert.equal(r.payId, 'P999');
+  assert.equal(r.expirePayTime, '2026-10-10 15:30:00', '支付截止时间比支付链接更有用');
+  assert.equal(r.pickupCode, '8842');
+  assert.equal(r.amount, '37.90');
+  assert.equal(r.storeName, '麦当劳测试餐厅');
+  // 官方不提供支付链接，就绝不能凭空编一个出来
+  assert.equal(r.payUrl, null);
 });
 
 test('定位：城市坐标表本身是自洽的', () => {
