@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { GachaService } from '../app/gachaService.js';
 import { McdMcpError } from '../infra/mcdMcpClient.js';
+import { nearestCity } from '../domain/cityLocator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5173);
@@ -52,6 +53,10 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/session' && req.method === 'GET') {
       const sid = url.searchParams.get('id');
       return json(res, 200, sessions.get(sid) ?? { ok: false, reason: '会话已过期，请重新扭一次' });
+    }
+    // 浏览器定位 → 城市名。麦当劳 MCP 只认城市名，不认经纬度
+    if (url.pathname === '/api/locate' && req.method === 'POST') {
+      return await handleLocate(req, res);
     }
     json(res, 404, { ok: false, error: 'Not Found' });
   } catch (error) {
@@ -148,6 +153,16 @@ async function handleOrder(req, res) {
     peopleCount: Number(body.people ?? 1),
   });
   json(res, result.ok ? 200 : 409, result);
+}
+
+/**
+ * 经纬度 → 城市名。
+ * 用 POST 而不是 GET：坐标属于位置信息，不该出现在 URL、访问日志和浏览器历史里。
+ */
+async function handleLocate(req, res) {
+  const body = await readBody(req);
+  const result = nearestCity(body.lat, body.lng);
+  json(res, result.ok ? 200 : 400, result);
 }
 
 // ---------- 工具 ----------

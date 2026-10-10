@@ -45,6 +45,7 @@ async function init() {
   });
   $('btn-confirm').addEventListener('click', confirmOrder);
   $('btn-order').addEventListener('click', placeOrder);
+  $('btn-locate').addEventListener('click', locateMe);
 
   // 键盘：回车即可扭，不必先点拉杆（拉杆本身是 button，天然可聚焦）
   $('address').addEventListener('keydown', (e) => {
@@ -53,6 +54,88 @@ async function init() {
 
   // 音效必须在用户手势后初始化，否则浏览器会拦截 AudioContext
   document.addEventListener('pointerdown', initAudio, { once: true });
+}
+
+/**
+ * 「用我的位置」：浏览器定位 → 后端翻译成城市名 → 填进地点框。
+ *
+ * 为什么不直接把经纬度交给麦当劳：实测 query-nearby-stores 只认城市名，
+ * 传 "31.19,121.32" 会报「没有查询到该地址」。所以只能定位到城市这一级，
+ * 然后提示用户补具体地标，让结果更准。
+ *
+ * 定位失败（拒绝授权 / 超时 / 非 HTTPS）时一律降级为手动输入，不阻断主流程。
+ */
+async function locateMe() {
+  const btn = $('btn-locate');
+  const input = $('address');
+  const hint = $('address-hint');
+
+  if (!navigator.geolocation) {
+    setAddressHint('这个浏览器不支持定位，手动填写地点就行', 'err');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('busy');
+  setAddressHint('正在获取你的位置…');
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        // 只要城市级精度，低精度更快更省电
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 600000, // 10 分钟内的缓存结果可直接用
+      });
+    });
+
+    const result = await post('/api/locate', {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+    });
+
+    if (!result.ok) {
+      setAddressHint(result.message ?? '定位失败，请手动填写地点', 'err');
+      return;
+    }
+
+    input.value = result.address;
+    setAddressHint(
+      `${result.message}。补上更具体的地标（例如「${result.city}虹桥站」），找到的门店会更近。`,
+      result.confidence === 'high' ? 'ok' : 'warn'
+    );
+    input.focus();
+  } catch (error) {
+    // 1=用户拒绝授权 2=拿不到位置 3=超时
+    const message =
+      error?.code === 1
+        ? '你关掉了定位授权，手动填写地点即可'
+        : error?.code === 2
+          ? '暂时拿不到位置信息，手动填写吧'
+          : error?.code === 3
+            ? '定位超时了，手动填写吧'
+            : '定位失败，手动填写地点即可';
+    setAddressHint(message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('busy');
+  }
+}
+
+function setAddressHint(text, tone) {
+  const hint = $('address-hint');
+  hint.textContent = text;
+  hint.classList.remove('locate-ok', 'locate-warn', 'locate-err');
+  if (tone) hint.classList.add(`locate-${tone}`);
+}
+
+async function post(url, body) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return response.json();
 }
 
 function renderDietChips() {

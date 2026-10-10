@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { Catalog, applyAvoidRules, ALLERGY_RULES } from '../src/domain/catalog.js';
 import { gacha, DIET_GOALS } from '../src/domain/gacha.js';
 import { rerollSlot, confirmCombination } from '../src/domain/reveal.js';
+import { nearestCity, distanceKm, CITY_COORDS } from '../src/domain/cityLocator.js';
 
 // ---------- 测试数据：一份贴近真实麦当劳菜单的假目录 ----------
 
@@ -796,5 +797,72 @@ test('压力测试：2000 次随机组合，金额永远不超、结果永远自
     }
     // 不变量 6：营养汇总项数不超过总数
     assert.ok(r.nutrition.covered <= r.nutrition.total);
+  }
+});
+
+// ---------- 定位：经纬度 → 城市名 ----------
+
+test('定位：市中心坐标能推断出正确的城市', () => {
+  const cases = [
+    ['上海人民广场', 31.2304, 121.4737, '上海'],
+    ['深圳福田', 22.5431, 114.0579, '深圳'],
+    ['北京天安门', 39.9087, 116.3975, '北京'],
+    ['江门蓬江', 22.59, 113.08, '江门'],
+    ['广州天河', 23.13, 113.32, '广州'],
+    ['成都春熙路', 30.657, 104.081, '成都'],
+  ];
+  for (const [label, lat, lng, expected] of cases) {
+    const r = nearestCity(lat, lng);
+    assert.equal(r.ok, true, `${label} 应该定位成功`);
+    assert.equal(r.city, expected, `${label} 应该定位到 ${expected}`);
+    assert.equal(r.confidence, 'high', `${label} 的置信度应该是 high`);
+  }
+});
+
+test('定位：距离计算符合常识量级', () => {
+  const shToBj = distanceKm(31.2304, 121.4737, 39.9087, 116.3975);
+  assert.ok(shToBj > 1000 && shToBj < 1100, `上海到北京约 1067km，实际 ${shToBj}`);
+
+  const gzToSz = distanceKm(23.13, 113.26, 22.5431, 114.0579);
+  assert.ok(gzToSz > 100 && gzToSz < 160, `广州到深圳约 120km，实际 ${gzToSz}`);
+
+  // 同一点距离为 0
+  assert.ok(distanceKm(31.23, 121.47, 31.23, 121.47) < 0.001);
+});
+
+test('定位：无效或越界坐标返回失败而不是瞎猜', () => {
+  // 关键：这些值都能被 Number() 转成 0，绝不能被当成「纬度 0 经度 0」
+  const badValues = [null, undefined, '', '   ', 'abc', NaN, [], {}, true, false];
+  for (const bad of badValues) {
+    assert.equal(nearestCity(bad, bad).ok, false, `${JSON.stringify(bad)} 应判为无效`);
+    assert.equal(nearestCity(bad, 121.47).ok, false, `纬度为 ${JSON.stringify(bad)} 时应判为无效`);
+    assert.equal(nearestCity(31.23, bad).ok, false, `经度为 ${JSON.stringify(bad)} 时应判为无效`);
+  }
+
+  assert.equal(nearestCity(91, 121).ok, false, '纬度 91 度不合法');
+  assert.equal(nearestCity(-91, 121).ok, false, '纬度 -91 度不合法');
+  assert.equal(nearestCity(31, 181).ok, false, '经度 181 度不合法');
+  assert.equal(nearestCity(31, -181).ok, false, '经度 -181 度不合法');
+
+  // 字符串形式的数字应该被接受（表单传值常见）
+  assert.equal(nearestCity('31.2304', '121.4737').city, '上海');
+});
+
+test('定位：离所有城市都很远时明确告知不可靠，而不是装作确定', () => {
+  // 太平洋中部
+  const r = nearestCity(0, 0);
+  assert.equal(r.ok, true, '仍然返回一个结果，供用户参考');
+  assert.equal(r.confidence, 'low');
+  assert.ok(r.message.includes('建议手动填写'), '必须提示用户手动填写，不能假装很准');
+});
+
+test('定位：城市坐标表本身是自洽的', () => {
+  // 数量与去重：不能有重复城市名，坐标必须在合法范围
+  const names = CITY_COORDS.map((c) => c[0]);
+  assert.equal(new Set(names).size, names.length, '城市名不能重复');
+
+  for (const [city, lat, lng] of CITY_COORDS) {
+    assert.ok(lat > 17 && lat < 55, `${city} 纬度 ${lat} 超出中国大陆范围`);
+    assert.ok(lng > 70 && lng < 136, `${city} 经度 ${lng} 超出中国大陆范围`);
   }
 });

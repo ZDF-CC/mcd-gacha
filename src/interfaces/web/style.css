@@ -143,6 +143,106 @@ input:focus {
 .hint { margin: 6px 0 0; }
 .hint-inline { margin-left: 6px; }
 
+/* ---------- 地址行 + 定位按钮 ---------- */
+
+.address-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.address-row input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.locate-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s;
+}
+
+.locate-btn:hover:not([disabled]) {
+  border-color: var(--mcd-red);
+  background: #fff8f7;
+}
+
+.locate-btn:focus-visible {
+  outline: 2px solid var(--mcd-red);
+  outline-offset: 2px;
+}
+
+.locate-btn[disabled] {
+  opacity: .55;
+  cursor: default;
+}
+
+/* 定位图标：用 CSS 画一个小圆环加十字，避免额外的图片请求 */
+.locate-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  position: relative;
+}
+
+.locate-icon::after,
+.locate-icon::before {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+.locate-icon::before {
+  left: 50%;
+  top: -5px;
+  width: 2px;
+  height: 5px;
+  transform: translateX(-50%);
+}
+
+.locate-icon::after {
+  left: -5px;
+  top: 50%;
+  width: 5px;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.locate-btn.busy .locate-icon {
+  animation: locatePulse .8s ease-in-out infinite;
+}
+
+@keyframes locatePulse {
+  0%, 100% { opacity: .3; }
+  50% { opacity: 1; }
+}
+
+.hint.locate-ok { color: var(--ok); }
+.hint.locate-warn { color: #b26a00; }
+.hint.locate-err { color: var(--mcd-red); }
+
+@media (max-width: 520px) {
+  .locate-text { display: none; }
+  .locate-btn { padding: 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .locate-btn.busy .locate-icon { animation: none; }
+}
+
 /* ---------- 筹码按钮 ---------- */
 
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }

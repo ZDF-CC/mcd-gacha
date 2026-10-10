@@ -24,8 +24,13 @@
 
     <div class="field">
       <label for="address">地点 <span class="req">必填</span></label>
-      <input id="address" type="text" placeholder="例如：上海虹桥站 / 深圳南山科技园" autocomplete="off" />
-      <p class="hint">用来查附近门店的在售菜单，支持地标、商场、地铁站名称</p>
+      <div class="address-row">
+        <input id="address" type="text" placeholder="例如：上海虹桥站 / 深圳南山科技园" autocomplete="off" />
+        <button type="button" id="btn-locate" class="locate-btn" aria-label="用我的当前位置">
+          <span class="locate-icon" aria-hidden="true"></span><span class="locate-text">定位</span>
+        </button>
+      </div>
+      <p class="hint" id="address-hint">用来查附近门店的在售菜单，支持地标、商场、地铁站名称</p>
     </div>
 
     <div class="field-row">
